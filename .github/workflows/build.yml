@@ -68,10 +68,7 @@ jobs:
 
           curl -LSs "https://raw.githubusercontent.com/KOWX712/KernelSU/main/kernel/setup.sh" | bash -s master
           
-          git config --global user.email "ci@example.com"
-          git config --global user.name "CI Bot"
-          git add .
-          git commit -m "Commit for clean status"
+          touch ./.scmversion
 
           make O=out gki_defconfig vendor/kalama_GKI.config vendor/oplus/kalama_GKI.config vendor/debugfs.config
           make -j2 O=out
