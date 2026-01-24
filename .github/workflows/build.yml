@@ -6,10 +6,7 @@ jobs:
   PixelOS_Kernel_CI:
     env:
         CLANG_VER: clang-r547379
-        ARCH: arm64
-        SUBARCH: arm64
-        LLVM: "1"
-        LLVM_IAS: "1"
+        GH_TOKEN: ${{ github.token }}
     runs-on: ubuntu-latest
     permissions:
       contents: write
