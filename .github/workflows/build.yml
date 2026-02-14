@@ -2,8 +2,36 @@ name: Compile Kernel
 
 on:
   workflow_dispatch:
+    inputs:
+      kernel_source:
+        description: Kernel Source Code(PixelOS plz use op12r-dev
+        required: true
+        type: choice
+        options:
+          - LineageOS
+          - crdroidandroid
+          - OnePlus12R-development
+          
+      kernel_branch:
+        description: Kernel Branch(such as lineage-23.2 sixteen-qpr1
+        required: true
+        type: string
+        default: ""
+        
+      ksu_type:
+        description: "KernelSU Version"
+        required: true
+        type: choice
+        options:
+          - None
+          - Official KernelSU
+          - KernelSU Next
+          - KernelSU Next with susfs
+          - KowSU
+          - ReSukiSU Ultra
+          - ReSukiSU Ultra with susfs
 jobs:
-  PixelOS_Kernel_CI:
+  SM8550_Kernel_CI:
     env:
         CLANG_VER: clang-r547379
         GH_TOKEN: ${{ github.token }}
@@ -22,23 +50,23 @@ jobs:
           
       - name: Install build dependencies
         run: |
-            sudo apt update
-            sudo apt install -y \
-            bc bison flex \
-            libssl-dev \
-            libelf-dev \
-            libdw-dev \
-            build-essential \
-            lz4 \
-            git \
-            python3 \
-            curl \
-            dwarves \
-            cpio
+          sudo apt update
+          sudo apt install -y \
+          bc bison flex \
+          libssl-dev \
+          libelf-dev \
+          libdw-dev \
+          build-essential \
+          lz4 \
+          git \
+          python3 \
+          curl \
+          dwarves \
+          cpio
       - name: Clone Kernel Source
         run: |
-          git clone --depth=1 -b sixteen-qpr1 https://github.com/OnePlus12R-development/android_kernel_oneplus_sm8550.git sm8550
-          git clone --depth=1 -b sixteen-qpr1 https://github.com/OnePlus12R-development/android_kernel_oneplus_sm8550-modules.git sm8550-modules
+          git clone --depth=1 -b ${{ inputs.kernel_branch }} https://github.com/${{ inputs.kernel_source }}/android_kernel_oneplus_sm8550.git sm8550
+          git clone --depth=1 -b ${{ inputs.kernel_branch }} https://github.com/${{ inputs.kernel_source }}/android_kernel_oneplus_sm8550-modules.git sm8550-modules
 
       - name: Download AOSP Clang
         run: |
@@ -69,7 +97,41 @@ jobs:
 
           cd sm8550
 
-          curl -LSs "https://raw.githubusercontent.com/KOWX712/KernelSU/main/kernel/setup.sh" | bash -s master
+          case "${{ inputs.ksu_type }}" in
+          
+            "None")
+              ;;
+              
+            "Official KernelSU")
+              curl -LSs "https://raw.githubusercontent.com/tiann/KernelSU/main/kernel/setup.sh" | bash -s main
+              ;;
+              
+            "KowSU")
+               curl -LSs "https://raw.githubusercontent.com/KOWX712/KernelSU/main/kernel/setup.sh" | bash -s master
+              ;;
+
+            "KernelSU Next")
+              curl -LSs "https://raw.githubusercontent.com/KernelSU-Next/KernelSU-Next/next/kernel/setup.sh" | bash -s dev
+              ;;
+
+            "KernelSU Next with susfs")
+              curl -LSs "https://raw.githubusercontent.com/pershoot/KernelSU-Next/refs/heads/dev-susfs/kernel/setup.sh" | bash -s dev-susfs
+              ;;
+
+            "ReSukiSU Ultra"|"ReSukiSU Ultra with susfs")
+              curl -LSs "https://raw.githubusercontent.com/ReSukiSU/ReSukiSU/main/kernel/setup.sh" | bash -s builtin
+              ;;
+          esac
+          
+          if [[ "${{ inputs.ksu_type }}" == *susfs ]]; then
+            git clone -b gki-android13-5.15 https://gitlab.com/simonpunk/susfs4ksu.git susfs
+            cd susfs
+            cp ./kernel_patches/50_add_susfs_in_gki-android13-5.15.patch ..
+            cp ./kernel_patches/fs/* ../fs/
+            cp ./kernel_patches/include/linux/* ../include/linux/
+            cd ..
+            patch -p1 < 50_add_susfs_in_gki-android13-5.15.patch
+          fi
           
           touch ./.scmversion
           
@@ -78,16 +140,18 @@ jobs:
 
       - name: Make AnyKernel3
         run: |
+          ZIP_NAME="${{ inputs.ksu_type }}_$(date -u +"%Y%m%d_%H%M")"
           git clone https://github.com/Kernel-SU/AnyKernel3.git
 
           cp sm8550/out/arch/arm64/boot/Image AnyKernel3/Image
           cp sm8550/out/arch/arm64/boot/Image ./Image
           cd AnyKernel3
 
-          zip -r9 ../KowSU.zip * -x .git README.md *placeholder
+          zip -r9 ../${ZIP_NAME}.zip * -x .git
 
       - name: Create GitHub Release
         run: |
-          REL_NAME="PixelOS_OPSM8550_$(date -u +"%Y%m%d_%H%M")"
+          REL_NAME="OPSM8550_${{ inputs.kernel_source }}-${{ inputs.kernel_branch }}_${{ inputs.ksu_type }}_$(date -u +"%Y%m%d_%H%M")"
           cd ${GITHUB_WORKSPACE}
-          gh release create "$REL_NAME" --title "$REL_NAME" --notes "" KowSU.zip Image
+          ZIP_FILE=$(ls *.zip)
+          gh release create "$REL_NAME" --title "$REL_NAME" --notes "" ${ZIP_FILE} Image
