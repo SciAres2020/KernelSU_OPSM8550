@@ -24,12 +24,12 @@ on:
         type: choice
         options:
           - None
-          - Official KernelSU
-          - KernelSU Next
-          - KernelSU Next with susfs
+          - Official-KernelSU
+          - KernelSU-Next
+          - KernelSU-Next-with-susfs
           - KowSU
-          - ReSukiSU Ultra
-          - ReSukiSU Ultra with susfs
+          - ReSukiSU
+          - ReSukiSU-with-susfs
 jobs:
   SM8550_Kernel_CI:
     env:
@@ -102,7 +102,7 @@ jobs:
             "None")
               ;;
               
-            "Official KernelSU")
+            "Official-KernelSU")
               curl -LSs "https://raw.githubusercontent.com/tiann/KernelSU/main/kernel/setup.sh" | bash -s main
               ;;
               
@@ -110,15 +110,15 @@ jobs:
                curl -LSs "https://raw.githubusercontent.com/KOWX712/KernelSU/main/kernel/setup.sh" | bash -s master
               ;;
 
-            "KernelSU Next")
+            "KernelSU-Next")
               curl -LSs "https://raw.githubusercontent.com/KernelSU-Next/KernelSU-Next/next/kernel/setup.sh" | bash -s dev
               ;;
 
-            "KernelSU Next with susfs")
+            "KernelSU-Next-with-susfs")
               curl -LSs "https://raw.githubusercontent.com/pershoot/KernelSU-Next/refs/heads/dev-susfs/kernel/setup.sh" | bash -s dev-susfs
               ;;
 
-            "ReSukiSU Ultra"|"ReSukiSU Ultra with susfs")
+            "ReSukiSU"|"ReSukiSU-with-susfs")
               curl -LSs "https://raw.githubusercontent.com/ReSukiSU/ReSukiSU/main/kernel/setup.sh" | bash -s builtin
               ;;
           esac
